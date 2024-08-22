@@ -4,11 +4,11 @@
 
 This is a  backend for a Product management system built with Node.js. It supports the following functionalities:
 
-- Retrieve tasks
-- Add tasks
-- Update tasks
-- Delete tasks
-- Search tasks by name or author
+- Retrieve products
+- Add products
+- Update products
+- Delete products
+- edit and delete users
 
 The system implements role-based authentication to differentiate between Admin and User roles:
 - **Admin**: Can perform all operations (get, add, update, delete) on any product.
