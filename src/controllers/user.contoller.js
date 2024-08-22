@@ -1,15 +1,15 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
-const { hashValue,verifyHash } = require("../helpers/hash.helper");
+const { hashValue, verifyHash } = require("../helpers/hash.helper");
+const { validationResult } = require("express-validator");
 
-/**
- * Handle user registration
- * @param {Request} req
- * @param {Response} res
- * @returns
- */
 const register = async (req, res) => {
   try {
+    // Validate the request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
     const { username, email, password } = req.body;
 
     // Check if an admin already exists
@@ -71,19 +71,13 @@ const register = async (req, res) => {
   }
 };
 
-/**
- * Handle user login
- * @param {Request} req
- * @param {Response} res
- * @returns
- */
 const logging = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "email and password are required" });
+    // Validate the request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
 
     const user = await User.findOne({ email });
@@ -115,7 +109,6 @@ const logging = async (req, res) => {
   }
 };
 
-
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -125,33 +118,10 @@ const updateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const deleteUser = async (req, res) => {
-      try {
-        const { id } = req.params;
-    
-        // Find the user by ID
-        const user = await User.findById(id);
-        if (!user) {
-          return res.status(404).json({ message: "User not found" });
-        }
-    
-        // Check if the user is trying to delete their own account or if they are an admin
-        if (user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
-          return res.status(403).json({ message: "Access denied" });
-        }
-    
-        // Delete the user
-        await User.findByIdAndDelete(id);
-    
-        res.status(200).json({
-          message: "User deleted successfully!",
-        });
-      } catch (err) {
-        res.status(500).json({ message: "Server error" });
-      }
-    };
-    
 
+    if (req.body.password) {
+      req.body.password = await hashValue(req.body.password);
+    }
     // Update the user and return the updated object
     const updatedUser = await User.findByIdAndUpdate(
       id,
@@ -168,9 +138,13 @@ const updateUser = async (req, res) => {
   }
 };
 
-
 const deleteUser = async (req, res) => {
   try {
+    // Validate the request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
     const { id } = req.params;
 
     // Find the user by ID
@@ -179,7 +153,10 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    if (
+      user._id.toString() !== req.user._id.toString() &&
+      req.user.role !== "admin"
+    ) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -190,16 +167,14 @@ const deleteUser = async (req, res) => {
       message: "User deleted successfully!",
     });
   } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server error" });
   }
 };
 
-
-
-
-module.exports={
+module.exports = {
   logging,
   updateUser,
   deleteUser,
   register,
-}
+};

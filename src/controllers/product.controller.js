@@ -5,9 +5,11 @@ const addProduct = async (req, res) => {
   try {
     const { name, description, price } = req.body;
 
-    if (!name || !description || !price) {
-      return res.status(400).json({ message: "Please send in all fields" });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
+
     const product = new Product({
       name,
       description,
@@ -48,7 +50,6 @@ const getProducts = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 const updateProductVisibility = async (req, res) => {
   try {
@@ -94,10 +95,8 @@ const updateProduct = async (req, res) => {
     }
 
     // Check if the product was added by the current user or if the user is an admin
-    if (product.addedBy.toString() !== req.user._id.toString()) {
-      if (req.user.role !== "admin") {
-        return res.status(403).json({ message: "Access denied" });
-      }
+    if (product.addedBy.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
     }
 
     // Update the product and return the updated object
@@ -118,8 +117,13 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    const { id } = req.params;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
+    const { id } = req.params;
+    
     // Find the product by ID
     const product = await Product.findById(id);
     if (!product) {
@@ -129,6 +133,7 @@ const deleteProduct = async (req, res) => {
     if (product.addedBy.toString() !== req.user._id.toString() && req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });
     }
+
 
     // Delete the product
     await Product.findByIdAndDelete(id);
@@ -141,11 +146,10 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-
 module.exports = {
   updateProductVisibility,
   getProducts,
   addProduct,
- updateProduct,
- deleteProduct
-}
+  updateProduct,
+  deleteProduct,
+};

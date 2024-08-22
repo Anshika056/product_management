@@ -16,7 +16,9 @@ const authMiddleware = async (req, res, next) => {
     // Find the user by ID from the token
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(401).json({ message: "User not found, authorization denied" });
+      return res
+        .status(401)
+        .json({ message: "User not found, authorization denied" });
     }
 
     // Attach the user to the request object
@@ -29,21 +31,22 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-  const roleGuard = (requiredRoles) => {
-    return (req, res, next) => {
-      const userRoles = [req.user?.role] || [];
-      const hasRole = requiredRoles.some(role => userRoles.includes(role));
-  
-      if (hasRole) {
-        return next();
-      } else {
-        return res.status(403).json({ message: 'Access denied: insufficient permissions.' });
-      }
-    };
+const roleGuard = (requiredRoles) => {
+  return (req, res, next) => {
+    const userRoles = [req.user?.role] || [];
+    const hasRole = requiredRoles.some((role) => userRoles.includes(role));
+
+    if (hasRole) {
+      return next();
+    } else {
+      return res
+        .status(403)
+        .json({ message: "Access denied: insufficient permissions." });
+    }
   };
-  
+};
 
 module.exports = {
-    authMiddleware,
-    roleGuard
+  authMiddleware,
+  roleGuard,
 };
