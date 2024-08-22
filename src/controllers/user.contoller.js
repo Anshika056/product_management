@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
-const { hashValue } = require("../helpers/hash.helper");
+const { hashValue,verifyHash } = require("../helpers/hash.helper");
 
 /**
  * Handle user registration
@@ -104,19 +104,102 @@ const logging = async (req, res) => {
       message: "User logged in successfully!",
       token,
       user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        role: newUser.role,
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
-    return ResponseHelper.error({ res, err: error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the user by ID
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const deleteUser = async (req, res) => {
+      try {
+        const { id } = req.params;
+    
+        // Find the user by ID
+        const user = await User.findById(id);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+    
+        // Check if the user is trying to delete their own account or if they are an admin
+        if (user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+          return res.status(403).json({ message: "Access denied" });
+        }
+    
+        // Delete the user
+        await User.findByIdAndDelete(id);
+    
+        res.status(200).json({
+          message: "User deleted successfully!",
+        });
+      } catch (err) {
+        res.status(500).json({ message: "Server error" });
+      }
+    };
+    
+
+    // Update the user and return the updated object
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $set: { ...req.body } },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: "User updated successfully!",
+      user: updatedUser,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the user by ID
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Delete the user
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: "User deleted successfully!",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+
 module.exports={
   logging,
-  register
+  updateUser,
+  deleteUser,
+  register,
 }

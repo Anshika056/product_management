@@ -29,33 +29,21 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-const adminAuthenticated = async (req, res, next) => {
-    try {
-      if (!req.headers.authorization) {
-        return res.status(401).json({
-          status: false,
-          statusCode: 401,
-          statusMessage: "Access token not found",
-        });
-      }
+  const roleGuard = (requiredRoles) => {
+    return (req, res, next) => {
+      const userRoles = [req.user?.role] || [];
+      const hasRole = requiredRoles.some(role => userRoles.includes(role));
   
-      const token = req.headers.authorization.split(" ");
-      req.user = await jwt.verify(token[1].trim(), process.env.JWT_SECRET);
-      if (req.user.role != "admin") {
-        return res.status(401).json({
-          status: false,
-          statusCode: 401,
-          statusMessage: "Access Denied",
-        });
+      if (hasRole) {
+        return next();
+      } else {
+        return res.status(403).json({ message: 'Access denied: insufficient permissions.' });
       }
-  
-      next();
-    } catch (error) {
-      next(error);
-    }
+    };
   };
+  
 
 module.exports = {
     authMiddleware,
-    adminAuthenticated
+    roleGuard
 };
